@@ -1,0 +1,4 @@
+Change bot phone number:
+- delete "yusril" folder
+- run node index.js
+- scan the qr code with the whatsapp app that has the new number
