@@ -333,9 +333,50 @@ To request support, simply start your message with 'Cicero' and explain the situ
           if (err) {
             logError(err.message);
             return;
-          } 
+          }
         });
 
+        function searchNearestTown(locationName, callback) {
+          const db = new sqlite3.Database('master_db_merged.db', sqlite3.OPEN_READONLY, (err) => {
+            if (err) {
+              logError(err.message);
+              return callback(err);
+            }
+
+            const sql = `SELECT * FROM locations WHERE Location_name = ? LIMIT 1`;
+
+            db.get(sql, [locationName.toLowerCase()], (err, row) => {
+              if (err) {
+                console.error(err.message);
+                return callback(err);
+              } else {
+                if (row) {
+                  const nearestTownNamesInRange = Object.keys(row)
+                    .filter(key => key.startsWith('Nearest_Town_'))
+                    .filter(key => {
+                      const rowValue = row[key];
+                      if (rowValue) {
+                        const distanceArray = rowValue.split(' - ');
+                        if (distanceArray.length > 1) {
+                          const distance = parseFloat(distanceArray[distanceArray.length - 1]);
+                          return !isNaN(distance) && distance >= 0 && distance <= 5;
+                        }
+                      }
+                      return false;
+                    })
+                    .map(key => row[key].split(' - ')[1]);
+                  console.log(nearestTownNamesInRange);
+                  callback(null, nearestTownNamesInRange);
+                } else {
+                  console.log(`No data found for location: ${locationName}`);
+                  callback(null, null);
+                }
+              }
+
+              db.close();
+            });
+          });
+        }
 
         // Convert the property details into an SQL query
         let sqlQuery = await convertExtractedDataToSQL(propertyDetails, db);
@@ -372,7 +413,7 @@ To request support, simply start your message with 'Cicero' and explain the situ
 
             processCombinedData();
 
-            function processCombinedData() {
+            async function processCombinedData() {
               console.log("397 - Start processcombineddata");
               let combinedFilteredRows = combinedRows; // Initialize with the original dataset
               /*if(propertyDetails.LocationA === "Guanacaste"){
@@ -384,6 +425,18 @@ To request support, simply start your message with 'Cicero' and explain the situ
               for (const key in propertyDetails) {
                 if (key.startsWith('Location') && propertyDetails[key]) {
                   searchValues.push(propertyDetails[key].toLowerCase());
+                  await new Promise((resolve, reject) => {
+                    searchNearestTown(propertyDetails[key].toLowerCase(), (err, locations) => {
+                      if (err) {
+                        reject(err);
+                      } else {
+                        if (locations && locations.length) {
+                          searchValues.push(...locations.filter(x => !x.includes(propertyDetails[key].toLowerCase())))
+                        }
+                        resolve(searchValues);
+                      }
+                    });
+                  });
                 }
               }
               console.log("Search values " + searchValues);
@@ -577,112 +630,6 @@ To request support, simply start your message with 'Cicero' and explain the situ
 
                 // Iterate through first 20 groups (or fewer, if fewer groups are available)
                 console.log("538 - Iterate first 20 groups");
-                // sortedGroups.slice(0, 20).forEach(group => {
-                //   if (resultsCount >= 20) {
-                //     return;
-                //   }
-                //   // Function to determine the recency category of the last_modified_date
-                //   const getRecencyCategory = (lastModifiedDate) => {
-                //     if (!lastModifiedDate) return 'NoDate'; // Distinct category for no date
-
-                //     const currentDate = new Date();
-                //     const modifiedDate = new Date(lastModifiedDate.split(".").reverse().join("/"));
-
-                //     // Calculate the difference in days
-                //     const daysDiff = Math.floor((currentDate - modifiedDate) / (1000 * 60 * 60 * 24));
-
-                //     // Check for "New" category (14 days or less)
-                //     if (daysDiff <= 14) return "*New/Updated*";
-
-                //     // Calculate the difference in months
-                //     const monthsDiff = currentDate.getMonth() - modifiedDate.getMonth() + (12 * (currentDate.getFullYear() - modifiedDate.getFullYear()));
-
-                //     if (monthsDiff <= 6) return "<6mths";
-                //     if (monthsDiff <= 12) return "<1yr";
-                //     if (monthsDiff <= 24) return "<2yrs";
-                //     return 'Older'; // Distinct category for more than 2 years old
-                //     console.log("564 - End getrecency");
-                //   };
-
-                //   // Function to format the price
-                //   const formatPrice = (price) => {
-                //     if (!price) return ''; // Return an empty string if the price is not available
-                //     return `$${parseFloat(price).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-                //   };
-
-                //   const addResult = (header, type, price, url, date, locationAliases) => {
-                //     // Ensure locationAliases is a non-empty string, default to an empty string if it's null or undefined
-                //     locationAliases = locationAliases || ''; // if locationAliases is null or undefined, use empty string
-
-                //     // If locationAliases is not empty, process it to extract the first alias
-                //     let firstAlias = locationAliases ? locationAliases.split(' - ')[0] : '';
-                //     if (firstAlias) {
-                //       // Capitalize the first letter of each word in the firstAlias
-                //       firstAlias = firstAlias.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-                //       console.log("581 - End add results");
-                //     }
-
-                //     results += '*' + header + '*' + ' - ';
-                //     results += type + ' - ';
-                //     if (firstAlias) {
-                //       results += firstAlias + ' - '; // Add first location alias if available
-                //     }
-                //     results += formatPrice(price) + '\n' + url;
-                //     const recencyCategory = getRecencyCategory(date);
-                //     if (recencyCategory !== 'NoDate') {
-                //       results += '\n' + '_' + recencyCategory + '_';
-                //     }
-                //     results += '\n\n';
-                //   };
-
-                //   if (group.rows.length === 1) {
-                //     // It's an individual entry
-                //     let entry = group.rows[0];
-                //     let recencyCategory = getRecencyCategory(entry.Last_modified_date);
-                //     if (recencyCategory !== 'Older') {
-                //       let header = entry.Header.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-                //       let price = entry.Price;
-                //       let url = entry.Original_URL.replace(/["']/g, "");
-                //       addResult(header, entry.Type, price, url, entry.Last_modified_date, entry.Location2_and_aliases);
-                //       displayedResultsIds.push(entry.ID);
-                //       resultsCount++;
-                //     }
-                //   } else {
-                //     // It's a group of duplicates
-                //     let mostRecentEntry = group.rows[0];
-                //     let recencyCategory = getRecencyCategory(mostRecentEntry.Last_modified_date);
-                //     if (recencyCategory !== 'Older') {
-                //       let header = mostRecentEntry.Header.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-                //       let price = mostRecentEntry.Price;
-
-                //       let firstAlias = '';
-                //       if (mostRecentEntry.Location2_and_aliases) {
-                //         firstAlias = mostRecentEntry.Location2_and_aliases.split(' - ')[0];
-                //         firstAlias = firstAlias.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-                //       }
-
-                //       results += '*' + header + '*' + ' - ';
-                //       results += mostRecentEntry.Type + ' - ';
-                //       if (firstAlias) {
-                //         results += firstAlias + ' - '; // Add first location alias if available
-                //       }
-                //       results += formatPrice(price) + '\n';
-
-                //       // Add all URLs in the group
-                //       let urlsAdded = new Set();
-                //       group.rows.forEach(row => {
-                //         let url = row.Original_URL.replace(/["']/g, "");
-                //         if (!urlsAdded.has(url)) {
-                //           results += ' - ' + url + '\n';
-                //           urlsAdded.add(url);
-                //         }
-                //       });
-                //       results += '_' + recencyCategory + '_\n\n';
-                //       displayedResultsIds.push(mostRecentEntry.ID);
-                //       resultsCount++;
-                //     }
-                //   }
-                // });
 
 
                 const getRecencyCategory = (lastModifiedDate) => {
@@ -918,155 +865,6 @@ To request support, simply start your message with 'Cicero' and explain the situ
         !key.includes('Location')
       );
       console.log("validKeys====>", validKeys);
-      // validKeys.forEach((key) => {
-      //   key = key.trim();
-      //   const value = data[key]?.trim();
-
-      //   if (typeRegex.test(key) && data[key]) {
-      //     typeValues.push(`'${data[key]}'`);
-      //   } else {
-      //     let condition = "";
-
-      //     if (key === "Price" && data[key]) {
-      //       let [classifier, figures] = data[key].split(/ (.+)/);
-      //       classifier = trimLowerCase(classifier);
-
-      //       if (classifier === "range") {
-      //         let rangeParts = figures.split(/-|\s/).map(part => {
-      //           const multiplier = part.toLowerCase().endsWith('k') ? 1000 : part.toLowerCase().endsWith('m') ? 1000000 : 1;
-      //           return parseFloat(part.replace(/[km\s]/gi, '')) * multiplier;
-      //         });
-
-      //         if (rangeParts.length === 2 && !isNaN(rangeParts[0]) && !isNaN(rangeParts[1])) {
-      //           condition = `(Price BETWEEN ${rangeParts[0]} AND ${rangeParts[1]}) `;
-      //           otherConditions.push(condition);
-      //         }
-      //       } else {
-      //         const multiplier = figures.toLowerCase().endsWith('k') ? 1000 : figures.toLowerCase().endsWith('m') ? 1000000 : 1;
-      //         figures = parseFloat(figures.replace(/[km\s]/gi, '')) * multiplier;
-
-      //         switch (classifier) {
-      //           case "minimum":
-      //             if (!isNaN(figures)) {
-      //               condition = `(Price >= ${figures})`;
-      //               otherConditions.push(condition);
-      //             }
-      //             break;
-      //           case "maximum":
-      //             if (!isNaN(figures)) {
-      //               condition = `(Price <= ${figures})`;
-      //               otherConditions.push(condition);
-      //             }
-      //             break;
-      //           default:
-      //             console.log(`Unexpected price classifier: ${classifier}`);
-      //         }
-      //       }
-      //     }
-      //     else if (key === "Bedrooms" && data[key]) {
-      //       // Split the data at the first space to get the classifier and figures
-      //       let [classifier, figures] = data[key].split(/ (.+)/);
-      //       classifier = classifier.toLowerCase();
-
-      //       // Handle different types of bedroom indications
-      //       switch (classifier) {
-      //         case "range":
-      //           // Handle range: split at hyphen and convert each figure
-      //           let rangeParts = figures.split(/-|\s/).map(part => parseFloat(part.trim()));
-      //           if (rangeParts.length === 2 && !isNaN(rangeParts[0]) && !isNaN(rangeParts[1])) {
-      //             condition = `(Bedrooms BETWEEN ${rangeParts[0]} AND ${rangeParts[1]}) `;
-      //             otherConditions.push(condition);
-      //           }
-      //           break;
-      //         case "minimum":
-      //           if (!isNaN(figures)) {
-      //             condition = `(Bedrooms>=${figures}) `;
-      //             otherConditions.push(condition);
-      //           }
-      //           break;
-      //         case "maximum":
-      //           if (!isNaN(figures)) {
-      //             condition = `(Bedrooms<=${figures}) `;
-      //             otherConditions.push(condition);
-      //           }
-      //           break;
-      //         case "exact":
-      //           if (!isNaN(figures)) {
-      //             condition = `(Bedrooms=${figures}) `;
-      //             otherConditions.push(condition);
-      //           }
-      //           break;
-      //         default:
-      //           // Log error or handle unexpected classifier
-      //           console.log(`Unexpected bedrooms classifier: ${classifier}`);
-      //       }
-      //     }
-      //     else if (key === "Bathrooms" && data[key]) {
-      //       // Split the data at the first space to get the classifier and figures
-      //       let [classifier, figures] = data[key].split(/ (.+)/);
-      //       classifier = classifier.toLowerCase();
-
-      //       // Handle different types of bedroom indications
-      //       switch (classifier) {
-      //         case "range":
-      //           // Handle range: split at hyphen and convert each figure
-      //           let rangeParts = figures.split(/-|\s/).map(part => parseFloat(part.trim()));
-      //           if (rangeParts.length === 2 && !isNaN(rangeParts[0]) && !isNaN(rangeParts[1])) {
-      //             condition = `(Bathrooms BETWEEN ${rangeParts[0]} AND ${rangeParts[1]}) `;
-      //             otherConditions.push(condition);
-      //           }
-      //           break;
-      //         case "minimum":
-      //           if (!isNaN(figures)) {
-      //             condition = `(Bathrooms>=${figures}) `;
-      //             otherConditions.push(condition);
-      //           }
-      //           break;
-      //         case "maximum":
-      //           if (!isNaN(figures)) {
-      //             condition = `(Bathrooms<=${figures}) `;
-      //             otherConditions.push(condition);
-      //           }
-      //           break;
-      //         case "exact":
-      //           if (!isNaN(figures)) {
-      //             condition = `(Bathrooms=${figures}) `;
-      //             otherConditions.push(condition);
-      //           }
-      //           break;
-      //         default:
-      //           // Log error or handle unexpected classifier
-      //           console.log(`Unexpected bathrooms classifier: ${classifier}`);
-      //       }
-      //     }
-      //     else if (key === "Lot size" && data[key] && !isNaN(data[key])) {
-      //       // If the key is "Lot size", and the value is a number, search for a record with a Size_lot_sqm that is between 10% less and 10% more than the number entered
-      //       let lowerBound = data[key] * 0.9;
-      //       let upperBound = data[key] * 1.1;
-      //       condition = `(Size_lot_sqm>=${lowerBound} AND Size_lot_sqm<=${upperBound}) `;
-      //       otherConditions.push(condition);
-      //     }
-      //     // Handling feature keys
-      //     else if (featureRegex.test(key)) {
-      //       let featureValue = data[key]; // The description of the feature
-      //       if (featureValue in featureFieldMap) {
-      //         // Add a query condition for the corresponding field
-      //         condition = `${featureFieldMap[featureValue]} = 'Yes' `;
-      //         otherConditions.push(condition);
-      //       } else {
-      //         data[key] += "/not supported";
-      //       }
-      //     }
-      //     // Handling other keys
-      //     else {
-      //       sqlQuery += `${key} = '${data[key]}' `;
-      //     }
-      //   }
-      // });
-
-      // Add other conditions to the SQL query
-      // There is one function convertExtractedDataToSQL in the sansekai file that make a query as requirement 
-      // firstly the query is concate now that manage with the array for better performance
 
       validKeys.forEach(key => {
         key = key.trim();
