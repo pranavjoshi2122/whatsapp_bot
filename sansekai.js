@@ -281,7 +281,39 @@ _Cicero is a product from Emperia Technologies S.R.L., based in Potrero, Guanaca
         const openai2 = new OpenAIApi(new Configuration({ apiKey: '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' })); // Second OpenAI instance
 
         // Send the user's request to the 2nd OpenAI instance
-        const systemPrompt = "Firstly, if the user message does not appear to be a property search query or is clearly not intended for property searching, respond with 'No search query'. Otherwise, please extract the locations, type, price, number of bedrooms, number of bathrooms, or key features from the following text and provide a response formatted as follows: 'LocationA: (text containing one town, neighborhood, or gated community; add LocationB and so on for other locations), TypeA: (text containing one property type; add TypeB and so one for other types), Price: (integer number, with numerical expression classifier), Feature1: (text containing one key feature of the house, add Feature2 and so on for other features), Bedrooms: (float number, with numerical expression classifier), Bathrooms: (float number, with numerical expression classifier)'. Note that the criteria may appear in random order in the attached text. For the Location, there may be multiple locations in the request, in which case assign each of them to a separate field in your response. Still for the Location, note that in indications such as 'close to LocationA', or 'near LocationA', or 'LocationA and surroundings', only the location must appear in your response. Still for the Location, note that the following terms should be interpreted as locations: Hacienda Pinilla, Catalina Cove, Senderos, Altos de Flamingo, Reserva Conchal, Las Ventanas, Tamarindo Park. For the Type, it can be either a House or a Condo; note that the following words must always be replaced by the word 'House': 'Home', 'Villa', 'Townhouse', 'Ranch', 'Single family home'; and the following words must always be replaced by the word 'Condo': 'Condominium', 'Apartment', 'Flat, 'Penthouse'. Still for the Type, there may be multiple types in the request, in which case assign each of them to a separate field in your response; if there is no type indicated leave that element of your response empty. For the Price, if the price (do not confuse with min/max/range related to the bedrooms or bathrooms) is expressed as a range respond with 'range ' followed by the figures separated by a hyphen, if the price (do not confuse with min/max/range related to the bedrooms or bathrooms) is expressed as a minimum respond with 'minimum ' followed by the figure, if the price (do not confuse with min/max/range related to the bedrooms or bathrooms) is expressed as a maximum (or if the price is just a single figure without further indication) respond with 'maximum ' followed by the figure. Still for the Price, note that the letter 'k' or 'K' after a figure means this figure should be multiplied by 1000; and the letter 'm' or 'M' after a figure means this figure should be multiplied by 1000000. Still for the Price, note that Bedrooms and Bathrooms can also have a minimum, maximum, or range indication, but min/max/range indications related to the Bedrooms or Bathrooms do not apply to the Price therefore make sure to separate indications related to the Pice and indications related to the Bedrooms or Bathrooms and do not take into account any Bedrooms or Bathrooms min/max/range indication in your response about the price. For Features, note that the key features are generally (but not limited to) elements such as: 'Luxury', 'Ocean view', 'Gated community', 'Pool' (if text contains 'Swimming pool' reply 'Pool'), 'Close to the beach', 'Close to schools', 'Beachfront', 'Walking distance to beach', or another specific feature used to described the style, situation, or aspect of the house, but the number of bedrooms or bathrooms or the size of the house must not be considered as special features; note that there may be multiple features in the request, in which case assign each of them to a separate field in your response. Still for the Features, note that a mention such as 'close to LocationA' (for example, 'close to Tamarindo') is not a feature, it is an indication of location. For the Bedrooms, note that the following words must be considered equivalent to 'Bedrooms': 'Beds', 'Br', 'beds', 'br'. Still for Bedrooms, if it's a range (do not confuse with min/max/range related to the price or bathrooms) respond with 'range ' followed by the figures separated by a hyphen, if it's a minimum (do not confuse with min/max/range related to the price or bathrooms) respond with 'minimum ' followed by the figure, if it's a maximum (do not confuse with min/max/range related to the price or bathrooms) respond with 'maximum ' followed by the figure (do not interpret a big number as a maximum if there is no clear indication that it should be considered a maximum), if it's a single figure respond 'exact ' followed by the figure (even if it's a high number with multiple digits, as long as it's just one number). For the Bathrooms, note that the following words must be considered equivalent to 'Bathrooms': 'Baths', 'baths'. Still for Bathrooms, if it's a range respond with 'range ' followed by the figures (separated by a hyphen), if it's a minimum respond with 'minimum ' followed by the figures, if it's a maximum respond with 'maximum ' followed by the figure, if it's a single figure respond 'exact ' followed by the figure. If one of the criteria can't be found in the user prompt, leave one blank space in your response (don't mention 'empty', nor 'undefined', nor 'N/A', leave it blank like this '') but maintain the response format as indicated. Don't include any introduction or explanation.";
+        const systemPrompt = `Firstly, if the user message does not appear to be a property search query or is clearly not intended for property searching,
+        respond with 'No search query'. Otherwise, please extract the locations, type, price, number of bedrooms, number of bathrooms, or key features from
+        the following text and provide a response formatted as follows: 
+        'LocationA: (text containing one town, neighborhood, condominium building, or gated community; add LocationB and so on for other locations), 
+        TypeA: (text containing one property type; add TypeB and so one for other types), 
+        Price: (integer number, with numerical expression classifier), 
+        Feature1: (text containing one key feature of the house, add Feature2 and so on for other features),
+        Bedrooms: (float number, with numerical expression classifier), 
+        Bathrooms: (float number, with numerical expression classifier)'. 
+        Note that the criteria may appear in random order in the attached text. 
+        For the Location, there may be multiple locations in the request, in which case assign each of them to a separate field in your response. 
+        Still for the Location, note that in indications such as 'close to LocationA', or 'near LocationA', or 'LocationA and surroundings', only the location must appear in your response. 
+        Still for the Location, note that the following terms should be interpreted as locations: Hacienda Pinilla, Catalina Cove, Senderos, Altos de Flamingo, Reserva Conchal, Las Ventanas, Tamarindo Park. 
+        For the Type, it can be either a House or a Condo; note that the following words must always be replaced by the word 'House': 'Home', 'Villa', 'Townhouse', 'Ranch', 'Single family home'; 
+        and the following words must always be replaced by the word 'Condo': 'Condominium', 'Apartment', 'Flat, 'Penthouse'. 
+        Still for the Type, there may be multiple types in the request, in which case assign each of them to a separate field in your response; if there is no type indicated leave that element of your response empty. 
+        For the Price, if the price (do not confuse with min/max/range related to the bedrooms or bathrooms) is expressed as a range respond with 'range ' followed by the figures separated by a hyphen, 
+        if the price (do not confuse with min/max/range related to the bedrooms or bathrooms) is expressed as a minimum respond with 'minimum ' followed by the figure, 
+        if the price (do not confuse with min/max/range related to the bedrooms or bathrooms) is expressed as a maximum (or if the price is just a single figure without further indication) respond with 'maximum ' followed by the figure. 
+        Still for the Price, note that the letter 'k' or 'K' after a figure means this figure should be multiplied by 1000; and the letter 'm' or 'M' after a figure means this figure should be multiplied by 1000000. 
+        Still for the Price, note that Bedrooms and Bathrooms can also have a minimum, maximum, or range indication, but min/max/range indications related to the Bedrooms or Bathrooms do not apply to the Price therefore make sure to separate indications related to the Price and indications related to the Bedrooms or Bathrooms and do not take into account any Bedrooms or Bathrooms min/max/range indication in your response about the price. 
+        For Features, note that the key features are generally (but not limited to) elements such as: 'Luxury', 'Ocean view', 'Gated community', 'Pool' (if text contains 'Swimming pool' reply 'Pool'), 'Close to the beach', 'Close to schools', 'Beachfront', 'Walking distance to beach', or another specific feature used to described the style, situation, or aspect of the house, but the number of bedrooms or bathrooms or the size of the house must not be considered as special features; 
+        note that there may be multiple features in the request, in which case assign each of them to a separate field in your response. 
+        Still for the Features, note that a mention such as 'close to LocationA' (for example, 'close to Tamarindo') is not a feature, it is an indication of location. 
+        For the Bedrooms, note that the following words must be considered equivalent to 'Bedrooms': 'Beds', 'Br', 'beds', 'br'. 
+        Still for Bedrooms, if it's a range (do not confuse with min/max/range related to the price or bathrooms) respond with 'range ' followed by the figures separated by a hyphen, if it's a minimum (do not confuse with min/max/range related to the price or bathrooms) respond with 'minimum ' followed by the figure, 
+        if it's a maximum (do not confuse with min/max/range related to the price or bathrooms) respond with 'maximum ' followed by the figure (do not interpret a big number as a maximum if there is no clear indication that it should be considered a maximum), 
+        if it's a single figure respond 'exact ' followed by the figure (even if it's a high number with multiple digits, as long as it's just one number). 
+        For the Bathrooms, note that the following words must be considered equivalent to 'Bathrooms': 'Baths', 'baths'. 
+        Still for Bathrooms, if it's a range respond with 'range ' followed by the figures (separated by a hyphen), if it's a minimum respond with 'minimum ' followed by the figures, 
+        if it's a maximum respond with 'maximum ' followed by the figure, if it's a single figure respond 'exact ' followed by the figure. 
+        If one of the criteria can't be found in the user prompt, leave one blank space in your response (don't mention 'empty', nor 'undefined', nor 'N/A', leave it blank like this '') but maintain the response format as indicated. 
+        Don't include any introduction or explanation.`;
         let response2;
         try {
           response2 = await openai2.createChatCompletion({
@@ -336,44 +368,142 @@ To request support, simply start your message with 'Cicero' and explain the situ
           }
         });
 
-        function searchNearestTown(locationName, callback) {
-          const db = new sqlite3.Database('master_db_merged.db', sqlite3.OPEN_READONLY, (err) => {
-            if (err) {
-              logError(err.message);
-              return callback(err);
-            }
+        async function searchNearestTowns(locationsArray) {
+          console.log("Function start");
+          const sqlite3 = require('sqlite3').verbose();
+          const dbPath = 'master_db_merged.db';
 
-            const sql = `SELECT * FROM locations WHERE Location_name = ? LIMIT 1`;
-
-            db.get(sql, [locationName.toLowerCase()], (err, row) => {
+          return new Promise((resolveOuter, rejectOuter) => {
+            const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err) => {
               if (err) {
-                console.error(err.message);
-                return callback(err);
-              } else {
-                if (row) {
-                  const nearestTownNamesInRange = Object.keys(row)
-                    .filter(key => key.startsWith('Nearest_Town_'))
-                    .filter(key => {
-                      const rowValue = row[key];
-                      if (rowValue) {
-                        const distanceArray = rowValue.split(' - ');
-                        if (distanceArray.length > 1) {
-                          const distance = parseFloat(distanceArray[distanceArray.length - 1]);
-                          return !isNaN(distance) && distance >= 0 && distance <= 5;
-                        }
-                      }
-                      return false;
-                    })
-                    .map(key => row[key].split(' - ')[1]);
-                  console.log(nearestTownNamesInRange);
-                  callback(null, nearestTownNamesInRange);
-                } else {
-                  console.log(`No data found for location: ${locationName}`);
-                  callback(null, null);
-                }
+                console.error("Error opening database:", err.message);
+                rejectOuter(err);
+                return;
               }
+            });
 
-              db.close();
+            let loc1Details = {};
+            let loc2Details = [];
+            let processedLocations = [];
+
+            console.log(`Locations array: ${locationsArray}`);
+
+            const processLocation = async (location) => {
+              console.log(`Processing location: ${location}`);
+              return new Promise(async (resolve, reject) => { // Marked this function as async
+                // Query to fetch locations by name or that have aliases
+                const sql = `SELECT * FROM Locations WHERE Location_name = ? OR Aliases IS NOT NULL`;
+                db.all(sql, [location], async (err, rows) => { // Added async here if you plan to use await within
+                  if (err) {
+                    console.log(`Error ${err}`);
+                    reject(err);
+                    return;
+                  }
+                  let matchedRow = rows.find(row =>
+                    row.Location_name.toLowerCase() === location.toLowerCase() ||
+                    (row.Aliases && row.Aliases.split(' - ').map(alias => alias.toLowerCase()).includes(location.toLowerCase()))
+                  );
+                  console.log(`Matched row ${JSON.stringify(matchedRow, null, 2).slice(0, 100)}`);
+                  // Checking if location is a location1 type of location
+                  if (matchedRow && ["condominium", "gated community", "residential community", "neighborhood", "beach", "resort"].includes(matchedRow.Location_type.toLowerCase())) {
+                    const detailSql = `SELECT Location_name FROM Locations WHERE Location_ID = ?`;
+
+                    // Await is now valid because the enclosing function is async
+                    const row = await new Promise((innerResolve, innerReject) => {
+                      db.get(detailSql, [matchedRow.Town_loc1], (detailErr, detailRow) => {
+                        if (detailErr) {
+                          console.error(`Error fetching town_loc1_name: ${detailErr}`);
+                          innerReject(detailErr);
+                        } else {
+                          innerResolve(detailRow);
+                        }
+                      });
+                    });
+
+                    if (row) {
+                      loc1Details[matchedRow.Location_name] = {
+                        townLoc1: matchedRow.Town_loc1,
+                        townLoc1Name: row.Location_name, // Enrich loc1Details with town_loc1_name
+                        aliases: matchedRow.Aliases ? matchedRow.Aliases.split(' - ') : []
+                      };
+                    } else {
+                      // Handle case where no matching Location_name is found
+                      loc1Details[matchedRow.Location_name] = {
+                        townLoc1: matchedRow.Town_loc1,
+                        aliases: matchedRow.Aliases ? matchedRow.Aliases.split(' - ') : []
+                      };
+                    }
+                    console.log(`Location ${location} is a loc1 type with Town_loc1: ${matchedRow.Town_loc1}`);
+                  }
+                  else { // If location is not a location1 type, it's a location2 type (will have to be updated in future when location3-4 types are used)
+                    loc2Details.push(location);
+                    console.log(`Location ${location} is a loc2 type or does not match any aliases exactly.`);
+                  }
+                  resolve(); // Resolve the outer promise
+                });
+              });
+            };
+
+            Promise.all(locationsArray.map(location => processLocation(location))).then(() => {
+              // Filter out loc2 locations that are related to loc1 locations
+              let finalLocations = Object.keys(loc1Details).concat(loc2Details.filter(loc2 => !Object.values(loc1Details).some(loc1 => loc1.townLoc1Name === loc2 || loc1.aliases.includes(loc2))));
+              console.log(`Loc1details ${JSON.stringify(loc1Details, null, 2)}`)
+              console.log(`Loc2details ${loc2Details}`)
+              //console.log(`Loc1 aliases ${loc1.aliases}`)
+              //console.log(`Loc2 ${loc2}`)
+              console.log(`Final locations ${finalLocations}`);
+              const findNearestTowns = async (location, isLoc1) => {
+                return new Promise((resolve, reject) => {
+                  let radius = isLoc1 ? 1 : 5; // 1km for loc1, 5km for loc2
+                  // Adjusted SQL query to remove Location_ID check and ensure Aliases column is checked for non-empty values
+                  const sql = `SELECT * FROM Locations WHERE Location_name = ? OR Aliases != ''`;
+                  console.log(`Location ${location}, loc 1 details ${JSON.stringify(loc1Details[location], null, 2)}`);
+                  db.all(sql, [location], (err, rows) => {
+                    if (err) {
+                      console.log(`Error: ${err}`);
+                      reject(err);
+                      return;
+                    }
+                    if (!rows) {
+                      console.log(`No data found for location: ${location}`);
+                      resolve();
+                      return;
+                    }
+                    console.log("Before matched row")
+                    // Updated logic to process based on Location_name and Aliases
+                    const matchedRow = rows.find(row => row.Location_name === location || row.Aliases.split(' - ').includes(location));
+                    console.log(`Final location: ${location}`)
+                    console.log(`Final matched row: ${JSON.stringify(matchedRow, null, 2).slice(0, 100)}`)
+                    if (matchedRow) {
+                      const nearestTowns = Object.keys(matchedRow).filter(key => key.startsWith('Nearest_Town_')).map(key => matchedRow[key]).filter(townInfo => {
+                        const parts = townInfo.split(' - ');
+                        const distance = parseFloat(parts[parts.length - 1]);
+                        return !isNaN(distance) && distance <= radius;
+                      }).map(townInfo => {
+                        const parts = townInfo.split(' - ');
+                        return { name: parts[1], distance: parseFloat(parts[parts.length - 1]) };
+                      });
+                      console.log(`Nearest towns for ${location}: ${JSON.stringify(nearestTowns, null, 2)}`);
+                      processedLocations.push({ location, nearestTowns });
+                    } else {
+                      console.log(`No matching location found for the specified conditions: ${location}`);
+                    }
+                    resolve();
+                  });
+                });
+              };
+
+              Promise.all(finalLocations.map(location => findNearestTowns(location, Object.keys(loc1Details).includes(location)))).then(() => {
+                db.close();
+                console.log(`Processed locations: ${JSON.stringify(processedLocations, null, 2)}`);
+                resolveOuter(processedLocations);
+              }).catch(error => {
+                console.error(`Error finding nearest towns: ${error}`);
+                rejectOuter(error);
+              });
+            }).catch(error => {
+              console.error(`Error processing locations: ${error}`);
+              rejectOuter(error);
             });
           });
         }
@@ -410,6 +540,7 @@ To request support, simply start your message with 'Cicero' and explain the situ
             console.log("345 - Db query");
 
             let combinedRows = initialRows.slice();
+            let searchValues = [];
 
             processCombinedData();
 
@@ -419,29 +550,57 @@ To request support, simply start your message with 'Cicero' and explain the situ
               /*if(propertyDetails.LocationA === "Guanacaste"){
                   propertyDetails.LocationA = "";
               }*/
-
-              // Collect all location values from propertyDetails that contain 'Location' in the key
-              let searchValues = [];
-              for (const key in propertyDetails) {
-                if (key.startsWith('Location') && propertyDetails[key]) {
-                  searchValues.push(propertyDetails[key].toLowerCase());
-                  await new Promise((resolve, reject) => {
-                    searchNearestTown(propertyDetails[key].toLowerCase(), (err, locations) => {
-                      if (err) {
-                        reject(err);
-                      } else {
-                        if (locations && locations.length) {
-                          searchValues.push(...locations.filter(x => !x.includes(propertyDetails[key].toLowerCase())))
-                        }
-                        resolve(searchValues);
-                      }
-                    });
-                  });
+              // Assuming propertyDetails is an object with keys like LocationA, LocationB, etc.
+              let allLocations = [];
+              for (const [key, value] of Object.entries(propertyDetails)) {
+                if (key.startsWith('Location') && value) {
+                  allLocations.push(value.toLowerCase());
                 }
               }
-              console.log("Search values " + searchValues);
-              console.log("Search values length " + searchValues.length)
+
+              // Ensure allLocations is not empty before proceeding
+              if (allLocations.length === 0) {
+                console.log("No locations to process.");
+                return;
+              }
+              console.log(`All locations ${allLocations}`);
+              console.log("Before function call");
+              // Call searchNearestTowns with all locations at once
+              try {
+                const locationsResults = await searchNearestTowns(allLocations);
+                console.log(`Raw Location results: ${JSON.stringify(locationsResults, null, 2)}`);
+
+                console.log("After function call else");
+                // Process results
+                if (!Array.isArray(locationsResults) || !locationsResults.every(result => result.hasOwnProperty('location') && Array.isArray(result.nearestTowns))) {
+                  console.error("Invalid format for locationsResults", locationsResults);
+                  return;
+                }
+                locationsResults.forEach(result => {
+                  const { location, nearestTowns } = result;
+                  console.log(`Location ${location} nearest town ${JSON.stringify(nearestTowns, null, 2)}`)
+                  // Add the original location
+                  console.log(`Search values before ${searchValues}`)
+                  searchValues.push(location);
+                  console.log(`Search values after location ${searchValues}`)
+                  // Add nearest towns, ensuring not to duplicate the original location
+                  nearestTowns.forEach(town => {
+                    const townNameLower = town.name.toLowerCase();
+                    if (!searchValues.includes(townNameLower) && townNameLower !== location.toLowerCase()) {
+                      searchValues.push(townNameLower);
+                    }
+                  });
+                  console.log(`Search values after nt ${searchValues}`)
+
+                });
+              } catch (error) {
+                console.error("Error retrieving nearest towns:", error);
+              }
+
               console.log("404 - Collect all location values");
+
+              console.log(`propertyA ${propertyDetails.LocationA}`)
+              console.log(`Combined filtered rows ${JSON.stringify(combinedFilteredRows, null, 2).slice(0, 500)}`)
 
               // Check if LocationA is "Guanacaste", apply Location5 filter and then exit to processFilteredData
               if (propertyDetails.LocationA && propertyDetails.LocationA.toLowerCase() === "guanacaste") {
@@ -451,28 +610,33 @@ To request support, simply start your message with 'Cicero' and explain the situ
                 return; // Exit the function
               }
 
+              console.log(`Search values ${searchValues}`)
               // Skip location filtering if no location criteria are provided
               //let combinedFilteredRows = combinedRows; // Initialize with the original dataset
-              if (searchValues.length > 0) {
+              if (searchValues) {
                 console.log("413 - Start filtering location");
                 if (propertyDetails.LocationA != "Guanacaste") {
                   // Define filtering function for Location2_and_aliases
                   const filterByLocation2AndAliases = (row) => {
                     if (!row.Location2_and_aliases) return false;
-                    const locations = row.Location2_and_aliases.split('-').map(s => s.trim().toLowerCase());
+                    // Splitting 'Location2_and_aliases' by ' - ' to get individual aliases as separate strings
+                    const locations = row.Location2_and_aliases.split(' - ').map(s => s.trim().toLowerCase());
                     console.log("420 - End filter loc2andal");
-                    return searchValues.some(searchValue => locations.some(location => location.includes(searchValue)));
+                    // Using === for strict equality comparison to ensure exact match
+                    return searchValues.some(searchValue => locations.some(location => location === searchValue.toLowerCase()));
                   };
+
 
                   // Apply filter for Location2_and_aliases
                   const filteredRowsLocation2AndAliases = combinedRows.filter(filterByLocation2AndAliases);
+                  //console.log(`filtered rows loc2andal ${JSON.stringify(filteredRowsLocation2AndAliases, null, 2)}`)
                   const nonMatchingRowsLocation2AndAliases = combinedRows.filter(row => !filterByLocation2AndAliases(row));
 
                   // Define filtering function for Location2
                   const filterByLocation2 = (row) => {
                     if (!row.Location2) return false;
                     console.log("430 - End filter loc2");
-                    return searchValues.some(searchValue => row.Location2.toLowerCase().includes(searchValue));
+                    return searchValues.some(searchValue => row.Location2.toLowerCase() === searchValue.toLowerCase());
                   };
 
                   const filteredRowsLocation2 = nonMatchingRowsLocation2AndAliases.filter(filterByLocation2);
@@ -482,9 +646,11 @@ To request support, simply start your message with 'Cicero' and explain the situ
                   const filterByLocation1 = (row) => {
                     if (!row.Location1) return false;
                     console.log("438 - End filter loc1");
-                    return searchValues.some(searchValue => row.Location1.toLowerCase().includes(searchValue));
+                    console.log(`Row loc1 ${row.Location1.toLowerCase()}`)
+                    return searchValues.some(searchValue => row.Location1.toLowerCase() === searchValue.toLowerCase());
                   };
 
+                  // console.log(`Rows left ${JSON.stringify(nonMatchingRowsLocation2, null, 2)}`)
                   const filteredRowsLocation1 = nonMatchingRowsLocation2.filter(filterByLocation1);
                   // Combine the results from different filters only if there are location criteria
                   combinedFilteredRows = filteredRowsLocation2AndAliases.concat(filteredRowsLocation2, filteredRowsLocation1);
@@ -852,8 +1018,6 @@ To request support, simply start your message with 'Cicero' and explain the situ
         "Pool": "Swimming_pool"
       };
 
-      let excludedWords = ["de", "del", "la", "las", "el", "los"];
-
       let typeValues = [];
       let otherConditions = [];
 
@@ -1110,7 +1274,7 @@ Cicero`)
       case "ai": case "openai":
         try {
           if (setting.keyopenai === "ISI_APIKEY_OPENAI_DISINI")
-            return reply("Apikey belum diisi\n\nSilahkan isi terlebih dahulu apikeynya di file key.json\n\nApikeynya bisa dibuat di website: https://beta.openai.com/account/api-keys");
+            return reply("");
 
           if (!text) return reply(`Chat dengan AI.\n\nContoh:\n${prefix}${command} Apa itu resesi`);
 
