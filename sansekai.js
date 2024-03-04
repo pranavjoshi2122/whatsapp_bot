@@ -5,7 +5,7 @@ const chalk = require("chalk");
 const { Configuration, OpenAIApi } = require("openai");
 const sqlite3 = require('sqlite3').verbose();
 const prefixes = ['Cicero', 'cicero', 'Help', 'help'];
-const authorizedNumbers = ['917878129383',];  // Numbers of Aurel Robert
+const authorizedNumbers = ['917878129383'];  // Numbers of Aurel Robert
 
 
 let setting = require("./key.json");
@@ -368,6 +368,22 @@ To request support, simply start your message with 'Cicero' and explain the situ
           }
         });
 
+        async function handleIncomingMessage(client, message, options) {
+          console.log("---------------------------------------------------------------Inside the function");
+          // Check if the received message is related to city confirmation
+          if (message === '/confirmcity') {
+            console.log("---------------------------------------------------------------Inside the if");
+            // Send a message asking for city confirmation with options
+            const confirmationMessage = `There are multiple towns of that name in different district, and provinces in the country \n\nPlease confirm your city:`;
+
+            // Combine confirmation message and options
+            const fullMessage = `${confirmationMessage}\n${options.map((option, index) => `${index + 1}. ${option}`).join('\n')}`;
+            return m.reply(fullMessage);
+            // Send the message with options
+            // await client.sendText(message.chat, fullMessage);
+          }
+        }
+
         async function searchNearestTowns(locationsArray) {
           console.log("Function start");
           const sqlite3 = require('sqlite3').verbose();
@@ -390,58 +406,85 @@ To request support, simply start your message with 'Cicero' and explain the situ
 
             const processLocation = async (location) => {
               console.log(`Processing location: ${location}`);
-              return new Promise(async (resolve, reject) => { // Marked this function as async
-                // Query to fetch locations by name or that have aliases
+              return new Promise(async (resolve, reject) => {
                 const sql = `SELECT * FROM Locations WHERE Location_name = ? OR Aliases IS NOT NULL`;
-                db.all(sql, [location], async (err, rows) => { // Added async here if you plan to use await within
+                db.all(sql, [location], async (err, rows) => {
                   if (err) {
                     console.log(`Error ${err}`);
                     reject(err);
                     return;
                   }
-                  let matchedRow = rows.find(row =>
+
+                  const matchingRows = rows.filter(row =>
                     row.Location_name.toLowerCase() === location.toLowerCase() ||
                     (row.Aliases && row.Aliases.split(' - ').map(alias => alias.toLowerCase()).includes(location.toLowerCase()))
                   );
-                  console.log(`Matched row ${JSON.stringify(matchedRow, null, 2).slice(0, 100)}`);
-                  // Checking if location is a location1 type of location
-                  if (matchedRow && ["condominium", "gated community", "residential community", "neighborhood", "beach", "resort"].includes(matchedRow.Location_type.toLowerCase())) {
-                    const detailSql = `SELECT Location_name FROM Locations WHERE Location_ID = ?`;
 
-                    // Await is now valid because the enclosing function is async
-                    const row = await new Promise((innerResolve, innerReject) => {
-                      db.get(detailSql, [matchedRow.Town_loc1], (detailErr, detailRow) => {
-                        if (detailErr) {
-                          console.error(`Error fetching town_loc1_name: ${detailErr}`);
-                          innerReject(detailErr);
-                        } else {
-                          innerResolve(detailRow);
-                        }
-                      });
+                  if (matchingRows.length === 0) {
+                    console.log(`No matching rows found for ${location}`);
+                    resolve();
+                    return;
+                  }
+
+                  if (matchingRows.length > 1) {
+                    // Multiple matches found, ask the user for confirmation
+                    console.log(`Multiple matches found for ${location}. Please choose one:`);
+                    let formattedRows = [];
+                    matchingRows.forEach((row, index) => {
+                      formattedRows.push(`${row.Location_name} ${row.District} ${row.Province}`);
                     });
+                    await handleIncomingMessage(client, '/confirmcity', formattedRows);
+                    // You can implement a mechanism to get the user's choice, for example, through user input.
+                    // For simplicity, let's assume the user selects the first option.
+                    const userChoice = 3;
+                    const chosenRow = matchingRows[userChoice - 1];
 
-                    if (row) {
-                      loc1Details[matchedRow.Location_name] = {
-                        townLoc1: matchedRow.Town_loc1,
-                        townLoc1Name: row.Location_name, // Enrich loc1Details with town_loc1_name
-                        aliases: matchedRow.Aliases ? matchedRow.Aliases.split(' - ') : []
-                      };
-                    } else {
-                      // Handle case where no matching Location_name is found
-                      loc1Details[matchedRow.Location_name] = {
-                        townLoc1: matchedRow.Town_loc1,
-                        aliases: matchedRow.Aliases ? matchedRow.Aliases.split(' - ') : []
-                      };
-                    }
-                    console.log(`Location ${location} is a loc1 type with Town_loc1: ${matchedRow.Town_loc1}`);
+                    console.log(`User selected: ${chosenRow.Location_name}`);
+                    await handleLocation(chosenRow);
+
+                  } else {
+                    // Only one match found
+                    const matchedRow = matchingRows[0];
+                    await handleLocation(matchedRow);
                   }
-                  else { // If location is not a location1 type, it's a location2 type (will have to be updated in future when location3-4 types are used)
-                    loc2Details.push(location);
-                    console.log(`Location ${location} is a loc2 type or does not match any aliases exactly.`);
-                  }
-                  resolve(); // Resolve the outer promise
+
+                  resolve();
                 });
               });
+            };
+
+            const handleLocation = async (matchedRow) => {
+              if (["condominium", "gated community", "residential community", "neighborhood", "beach", "resort"].includes(matchedRow.Location_type.toLowerCase())) {
+                const detailSql = `SELECT Location_name FROM Locations WHERE Location_ID = ?`;
+
+                const row = await new Promise((innerResolve, innerReject) => {
+                  db.get(detailSql, [matchedRow.Town_loc1], (detailErr, detailRow) => {
+                    if (detailErr) {
+                      console.error(`Error fetching town_loc1_name: ${detailErr}`);
+                      innerReject(detailErr);
+                    } else {
+                      innerResolve(detailRow);
+                    }
+                  });
+                });
+
+                if (row) {
+                  loc1Details[matchedRow.Location_name] = {
+                    townLoc1: matchedRow.Town_loc1,
+                    townLoc1Name: row.Location_name,
+                    aliases: matchedRow.Aliases ? matchedRow.Aliases.split(' - ') : []
+                  };
+                } else {
+                  loc1Details[matchedRow.Location_name] = {
+                    townLoc1: matchedRow.Town_loc1,
+                    aliases: matchedRow.Aliases ? matchedRow.Aliases.split(' - ') : []
+                  };
+                }
+                console.log(`Location ${matchedRow.Location_name} is a loc1 type with Town_loc1: ${matchedRow.Town_loc1}`);
+              } else {
+                loc2Details.push(matchedRow.Location_name);
+                console.log(`Location ${matchedRow.Location_name} is a loc2 type or does not match any aliases exactly.`);
+              }
             };
 
             Promise.all(locationsArray.map(location => processLocation(location))).then(() => {
@@ -483,7 +526,7 @@ To request support, simply start your message with 'Cicero' and explain the situ
                         const parts = townInfo.split(' - ');
                         return { name: parts[1], distance: parseFloat(parts[parts.length - 1]) };
                       });
-                      console.log(`Nearest towns for ${location}: ${JSON.stringify(nearestTowns, null, 2)}`);
+                      // console.log(`Nearest towns for ${location}: ${JSON.stringify(nearestTowns, null, 2)}`);
                       processedLocations.push({ location, nearestTowns });
                     } else {
                       console.log(`No matching location found for the specified conditions: ${location}`);
@@ -495,7 +538,7 @@ To request support, simply start your message with 'Cicero' and explain the situ
 
               Promise.all(finalLocations.map(location => findNearestTowns(location, Object.keys(loc1Details).includes(location)))).then(() => {
                 db.close();
-                console.log(`Processed locations: ${JSON.stringify(processedLocations, null, 2)}`);
+                // console.log(`Processed locations: ${JSON.stringify(processedLocations, null, 2)}`);
                 resolveOuter(processedLocations);
               }).catch(error => {
                 console.error(`Error finding nearest towns: ${error}`);
@@ -568,7 +611,7 @@ To request support, simply start your message with 'Cicero' and explain the situ
               // Call searchNearestTowns with all locations at once
               try {
                 const locationsResults = await searchNearestTowns(allLocations);
-                console.log(`Raw Location results: ${JSON.stringify(locationsResults, null, 2)}`);
+                // console.log(`Raw Location results: ${JSON.stringify(locationsResults, null, 2)}`);
 
                 console.log("After function call else");
                 // Process results
@@ -578,7 +621,7 @@ To request support, simply start your message with 'Cicero' and explain the situ
                 }
                 locationsResults.forEach(result => {
                   const { location, nearestTowns } = result;
-                  console.log(`Location ${location} nearest town ${JSON.stringify(nearestTowns, null, 2)}`)
+                  // console.log(`Location ${location} nearest town ${JSON.stringify(nearestTowns, null, 2)}`)
                   // Add the original location
                   console.log(`Search values before ${searchValues}`)
                   searchValues.push(location);
@@ -645,8 +688,8 @@ To request support, simply start your message with 'Cicero' and explain the situ
                   // Define filtering function for Location1
                   const filterByLocation1 = (row) => {
                     if (!row.Location1) return false;
-                    console.log("438 - End filter loc1");
-                    console.log(`Row loc1 ${row.Location1.toLowerCase()}`)
+                    // console.log("438 - End filter loc1");
+                    // console.log(`Row loc1 ${row.Location1.toLowerCase()}`)
                     return searchValues.some(searchValue => row.Location1.toLowerCase() === searchValue.toLowerCase());
                   };
 
